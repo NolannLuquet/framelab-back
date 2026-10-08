@@ -8,6 +8,8 @@ use App\Models\Participation;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Tag;
 use App\Models\Comment;
+use App\Models\Vote;
+use App\Models\Report;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -74,4 +76,41 @@ Route::get('/test-comment', function () {
 
 Route::get('/test-comments', function () {
     return Participation::with('comments')->find(1);
+});
+
+Route::get('/test-vote', function () {
+    return Vote::create([
+        'creativity' => 4,
+        'technique' => 3,
+        'theme_respect' => 5,
+        'vote_date' => '2026-10-05',
+        'user_id' => 1,
+        'participation_id' => 1,
+    ]);
+});
+
+Route::get('/test-votes', function () {
+    return Participation::with('votes')->find(1);
+});
+
+Route::get('/test-report-photo', function () {
+    return Report::create([
+        'reason' => 'Hors thème',
+        'report_date' => '2026-10-06',
+        'user_id' => 1,
+        'participation_id' => 1,
+    ]);
+});
+
+Route::get('/test-report-comment', function () {
+    return Report::create([
+        'reason' => 'Contenu inapproprié',
+        'report_date' => '2026-10-06',
+        'user_id' => 1,
+        'comment_id' => 1,
+    ]);
+});
+
+Route::get('/test-reports', function () {
+    return Participation::with('reports', 'comments.reports')->find(1);
 });

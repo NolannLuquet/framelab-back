@@ -30,4 +30,14 @@ class Participation extends Model
     {
         return $this->hasMany(Comment::class);
     }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
+    }
 }
