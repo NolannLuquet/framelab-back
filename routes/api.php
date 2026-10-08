@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Participation;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Tag;
+use App\Models\Comment;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -60,4 +61,17 @@ Route::get('/test-associate', function () {
     Participation::find(1)->tags()->attach(1);
 
     return Participation::with('tags')->find(1);
+});
+
+Route::get('/test-comment', function () {
+    return Comment::create([
+        'content' => 'Super photo !',
+        'comment_date' => '2026-10-04',
+        'user_id' => 1,
+        'participation_id' => 1,
+    ]);
+});
+
+Route::get('/test-comments', function () {
+    return Participation::with('comments')->find(1);
 });
