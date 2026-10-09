@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 
 Route::post('/users', [UserController::class, 'store']);
 Route::post('/session', [UserController::class, 'login']);

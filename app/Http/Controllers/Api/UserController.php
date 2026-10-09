@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
@@ -13,29 +16,11 @@ class UserController extends Controller
     public function store(Request $request)
     {
         if (User::where('email', $request->json('email'))->exists()) {
-            return response()->json([
-                'data' => null,
-                'error' => [
-                    'type' => 'https://framelab.com/conflict-error',
-                    'title' => 'Email déjà utilisé.',
-                    'status' => 409,
-                    'detail' => 'Un compte existe déjà avec ce mail',
-                ],
-                'meta' => null,
-            ], 409);
+            throw ValidationException::withMessages(['email' => 'Cet email est déjà utilisé.']);
         }
 
         if (User::where('username', $request->json('username'))->exists()) {
-            return response()->json([
-                'data' => null,
-                'error' => [
-                    'type' => 'https://framelab.com/conflict-error',
-                    'title' => 'Pseudo déjà utilisé.',
-                    'status' => 409,
-                    'detail' => 'Un compte existe déjà avec ce pseudo',
-                ],
-                'meta' => null,
-            ], 409);
+            throw ValidationException::withMessages(['username' => 'Ce pseudo est déjà utilisé.']);
         }
 
         $user = new User();
@@ -45,8 +30,8 @@ class UserController extends Controller
         $user->email = $request->json('email');
         $user->password = Hash::make($request->json('password'));
         $user->save();
-        $verification_token = $user->createToken('verification_token');
 
+        $verification_token = $user->createToken('verification_token');
         $url = url('/api/validate?token=' . urlencode($verification_token->plainTextToken));
 
         return response()->json([
@@ -65,35 +50,16 @@ class UserController extends Controller
         ], 201);
     }
 
-
     public function login(Request $request)
     {
         $user = User::where('email', $request->json('email'))->first();
 
         if (!$user || !Hash::check($request->json('password'), $user->password)) {
-            return response()->json([
-                'data' => null,
-                'error' => [
-                    'type' => 'https://framelab.com/error',
-                    'title' => 'Email ou mot de passe incorrect',
-                    'status' => 401,
-                    'detail' => 'Vérifiez votre email et votre mot de passe',
-                ],
-                'meta' => null,
-            ], 401);
+            throw new AuthenticationException('Email ou mot de passe incorrect.');
         }
 
         if (!$user->verified) {
-            return response()->json([
-                'data' => null,
-                'error' => [
-                    'type' => 'https://framelab.com/error',
-                    'title' => 'Compte non validé.',
-                    'status' => 403,
-                    'detail' => 'Cliquez sur le lien de validation avant de vous connecter.',
-                ],
-                'meta' => null,
-            ], 403);
+            throw new AuthorizationException('Compte non validé.');
         }
 
         $token = $user->createToken('auth_token', ['*'], now()->plus(years: 1))->plainTextToken;
@@ -112,7 +78,6 @@ class UserController extends Controller
             'meta' => null,
         ], 200);
     }
-
 
     public function me(Request $request)
     {
@@ -137,19 +102,10 @@ class UserController extends Controller
         $token = PersonalAccessToken::findToken($request->query('token'));
 
         if (!$token || $token->name != 'verification_token') {
-            return response()->json([
-                'data' => null,
-                'error' => [
-                    'type' => 'https://framelab.com/error',
-                    'title' => 'Lien de validation invalie',
-                    'status' => 400,
-                    'detail' => 'Ce lien est incorrect ou a déjà été utilisé.',
-                ],
-                'meta' => null,
-            ], 400);
+            throw new AuthenticationException('Lien de validation invalide.');
         }
 
-        $user = User::find($token->tokenable_id);
+        $user = $token->tokenable;
         $user->verified = true;
         $user->email_verified_at = now();
         $user->save();
@@ -165,7 +121,6 @@ class UserController extends Controller
         ], 200);
     }
 
-
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -177,6 +132,5 @@ class UserController extends Controller
             'error' => null,
             'meta' => null,
         ], 200);
-        
     }
 }
