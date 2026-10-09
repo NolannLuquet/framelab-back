@@ -10,9 +10,9 @@ class User extends Authenticatable
 {
     use HasApiTokens;
 
-    protected $fillable = ['lastname', 'firstname', 'username', 'email', 'password', 'verification_token'];
+    protected $fillable = ['lastname', 'firstname', 'username', 'email', 'password'];
 
-    protected $hidden = ['password', 'remember_token', 'verification_token'];
+    protected $hidden = ['password', 'remember_token'];
 
     public function participations(): HasMany
     {

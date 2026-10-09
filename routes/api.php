@@ -10,6 +10,11 @@ use App\Models\Tag;
 use App\Models\Comment;
 use App\Models\Vote;
 use App\Models\Report;
+use App\Http\Controllers\Api\UserController;
+
+Route::post('/users', [UserController::class, 'store']);
+Route::post('/session', [UserController::class, 'login']);
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
