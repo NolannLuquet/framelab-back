@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
 {
@@ -95,7 +96,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token', ['*'], now()->plus(years: 1))->plainTextToken;
 
         return response()->json([
             'data' => [
@@ -110,5 +111,72 @@ class UserController extends Controller
             'error' => null,
             'meta' => null,
         ], 200);
+    }
+
+
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'firstname' => $user->firstname,
+                'lastname' => $user->lastname,
+                'username' => $user->username,
+                'role' => $user->role,
+            ],
+            'error' => null,
+            'meta' => null,
+        ], 200);
+    }
+
+    public function validate(Request $request)
+    {
+        $token = PersonalAccessToken::findToken($request->query('token'));
+
+        if (!$token || $token->name != 'verification_token') {
+            return response()->json([
+                'data' => null,
+                'error' => [
+                    'type' => 'https://framelab.com/error',
+                    'title' => 'Lien de validation invalie',
+                    'status' => 400,
+                    'detail' => 'Ce lien est incorrect ou a déjà été utilisé.',
+                ],
+                'meta' => null,
+            ], 400);
+        }
+
+        $user = User::find($token->tokenable_id);
+        $user->verified = true;
+        $user->email_verified_at = now();
+        $user->save();
+
+        $token->delete();
+
+        return response()->json([
+            'data' => [
+                'message' => 'Compte validé, vous pouvez vous connecter.',
+            ],
+            'error' => null,
+            'meta' => null,
+        ], 200);
+    }
+
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'data' => [
+                'message' => 'Déconnexion réussie.',
+            ],
+            'error' => null,
+            'meta' => null,
+        ], 200);
+        
     }
 }
