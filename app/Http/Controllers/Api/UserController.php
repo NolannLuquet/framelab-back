@@ -105,7 +105,7 @@ class UserController extends Controller
             throw new AuthenticationException('Lien de validation invalide.');
         }
 
-        $user = $token->tokenable;
+        $user = User::find($token->tokenable_id);
         $user->verified = true;
         $user->email_verified_at = now();
         $user->save();
